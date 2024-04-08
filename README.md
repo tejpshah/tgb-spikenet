@@ -9,5 +9,3 @@ We evaluate the SpikeNet technique on:
 
 # SpikeNet Notes
 Each SpikeNet dataset necessitates a unique data loader class to accommodate the distinct data storage formats, such as DBLP using text files for edges, timesteps, and labels, while Patent relies on JSON files.
-
-# TGB Notes
