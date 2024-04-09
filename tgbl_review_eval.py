@@ -166,9 +166,6 @@ print(f"\tval: {metric}: {perf_metric_test: .4f}")
 test_time = timeit.default_timer() - start_val
 print(f"\tval: Elapsed Time (s): {test_time: .4f}")
 
-
-
-
 # ==================================================== Test
 # loading the test negative samples
 dataset.load_test_ns()
