@@ -15,13 +15,11 @@ from tgb.nodeproppred.dataset import NodePropPredDataset
 
 Data = namedtuple('Data', ['x', 'edge_index'])
 
-
 def standard_normalization(arr):
     n_steps, n_node, n_dim = arr.shape
     arr_norm = preprocessing.scale(np.reshape(arr, [n_steps, n_node * n_dim]), axis=1)
     arr_norm = np.reshape(arr_norm, [n_steps, n_node, n_dim])
     return arr_norm
-
 
 def edges_to_adj(edges, num_nodes, undirected=True):
     row, col = edges
@@ -32,7 +30,6 @@ def edges_to_adj(edges, num_nodes, undirected=True):
         adj = adj.maximum(adj.T)
     adj[adj > 1] = 1
     return adj
-
 
 class Dataset:
     def __init__(self, name=None, root="./data"):
@@ -143,7 +140,6 @@ class Dataset:
     def __repr__(self):
         return self.name
     
-
 class TGBN_GENRE(Dataset):
     def __init__(self, root=tgb.nodeproppred.dataset.PROJ_DIR+'/data', normalize=True):
         super().__init__(name='tgbn_genre', root=root)
@@ -204,8 +200,6 @@ class TGBN_GENRE(Dataset):
 
         assert np.allclose(nodes, np.arange(nodes.size))
         return labels
-
-
 
 class DBLP(Dataset):
     def __init__(self, root="./data", normalize=True):
@@ -269,7 +263,6 @@ class DBLP(Dataset):
         assert np.allclose(nodes, np.arange(nodes.size))
         return labels
 
-
 def merge(edges, step=1):
     if step == 1:
         return edges
@@ -283,7 +276,6 @@ def merge(edges, step=1):
         i += step
     print(f'Edges has been merged from {len(edges)} timestamps to {len(out)} timestamps')
     return out
-
 
 class Tmall(Dataset):
     def __init__(self, root="./data", normalize=True):
@@ -355,7 +347,6 @@ class Tmall(Dataset):
         labeled_nodes = np.array(nodes)
         labels = LabelEncoder().fit_transform(labels)
         return labels, labeled_nodes
-
 
 class Patent(Dataset):
     def __init__(self, root="./data", normalize=True):

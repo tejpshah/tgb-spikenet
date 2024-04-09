@@ -1,21 +1,17 @@
 from math import pi
-
 import torch
 import torch.nn as nn
 
 gamma = 0.2
 thresh_decay = 0.7
 
-
 def reset_net(net: nn.Module):
     for m in net.modules():
         if hasattr(m, 'reset'):
             m.reset()
 
-
 def heaviside(x: torch.Tensor):
     return x.ge(0)
-
 
 def gaussian(x, mu, sigma):
     """
@@ -23,12 +19,10 @@ def gaussian(x, mu, sigma):
     """
     return torch.exp(-((x - mu) * (x - mu)) / (2 * sigma * sigma)) / (sigma * torch.sqrt(2 * torch.tensor(pi)))
 
-
 class BaseSpike(torch.autograd.Function):
     """
     Baseline spiking function.
     """
-
     @staticmethod
     def forward(ctx, x, alpha):
         ctx.save_for_backward(x, alpha)
@@ -37,7 +31,6 @@ class BaseSpike(torch.autograd.Function):
     @staticmethod
     def backward(ctx, grad_output):
         raise NotImplementedError
-
 
 class SuperSpike(BaseSpike):
     """
@@ -48,14 +41,12 @@ class SuperSpike(BaseSpike):
     - Height of 1 ("The Remarkable Robustness of Surrogate Gradient...", Zenke et al. 2021)
     - alpha scaled by 10 ("Training Deep Spiking Neural Networks", Ledinauskas et al. 2020)
     """
-
     @staticmethod
     def backward(ctx, grad_output):
         x, alpha = ctx.saved_tensors
         grad_input = grad_output.clone()
         sg = 1 / (1 + alpha * x.abs()) ** 2
         return grad_input * sg, None
-
 
 class MultiGaussSpike(BaseSpike):
     """
@@ -65,7 +56,6 @@ class MultiGaussSpike(BaseSpike):
     Design choices:
     - Hyperparameters determined through grid search (Yin et al. 2021)
     """
-
     @staticmethod
     def backward(ctx, grad_output):
         x, alpha = ctx.saved_tensors
@@ -78,13 +68,11 @@ class MultiGaussSpike(BaseSpike):
         )
         return grad_input * sg, None
 
-
 class TriangleSpike(BaseSpike):
     """
     Spike function with triangular surrogate gradient
     as in Bellec et al. 2020.
     """
-
     @staticmethod
     def backward(ctx, grad_output):
         x, alpha = ctx.saved_tensors
@@ -92,13 +80,11 @@ class TriangleSpike(BaseSpike):
         sg = torch.nn.functional.relu(1 - alpha * x.abs())
         return grad_input * sg, None
 
-
 class ArctanSpike(BaseSpike):
     """
     Spike function with derivative of arctan surrogate gradient.
     Featured in Fang et al. 2020/2021.
     """
-
     @staticmethod
     def backward(ctx, grad_output):
         x, alpha = ctx.saved_tensors
@@ -106,9 +92,7 @@ class ArctanSpike(BaseSpike):
         sg = 1 / (1 + alpha * x * x)
         return grad_input * sg, None
 
-
 class SigmoidSpike(BaseSpike):
-
     @staticmethod
     def backward(ctx, grad_output):
         x, alpha = ctx.saved_tensors
@@ -117,30 +101,23 @@ class SigmoidSpike(BaseSpike):
         sg = (1. - sgax) * sgax * alpha
         return grad_input * sg, None
 
-
 def superspike(x, thresh=torch.tensor(1.0), alpha=torch.tensor(10.0)):
     return SuperSpike.apply(x - thresh, alpha)
-
 
 def mgspike(x, thresh=torch.tensor(1.0), alpha=torch.tensor(0.5)):
     return MultiGaussSpike.apply(x - thresh, alpha)
 
-
 def sigmoidspike(x, thresh=torch.tensor(1.0), alpha=torch.tensor(1.0)):
     return SigmoidSpike.apply(x - thresh, alpha)
-
 
 def trianglespike(x, thresh=torch.tensor(1.0), alpha=torch.tensor(1.0)):
     return TriangleSpike.apply(x - thresh, alpha)
 
-
 def arctanspike(x, thresh=torch.tensor(1.0), alpha=torch.tensor(10.0)):
     return ArctanSpike.apply(x - thresh, alpha)
 
-
 SURROGATE = {'sigmoid': sigmoidspike, 'triangle': trianglespike, 'arctan': arctanspike,
              'mg': mgspike, 'super': superspike}
-
 
 class IF(nn.Module):
     def __init__(self, v_threshold=1.0, v_reset=0., alpha=1.0, surrogate='triangle'):
@@ -168,7 +145,6 @@ class IF(nn.Module):
         self.v_th = gamma * spike + self.v_th * thresh_decay
         return spike
 
-
 class LIF(nn.Module):
     def __init__(self, tau=1.0, v_threshold=1.0, v_reset=0., alpha=1.0, surrogate='triangle'):
         super().__init__()
@@ -195,7 +171,6 @@ class LIF(nn.Module):
         # Calculate change in cell's threshold based on a fixed decay factor and incoming spikes.
         self.v_th = gamma * spike + self.v_th * thresh_decay
         return spike
-
 
 class PLIF(nn.Module):
     def __init__(self, tau=1.0, v_threshold=1.0, v_reset=0., alpha=1.0, surrogate='triangle'):

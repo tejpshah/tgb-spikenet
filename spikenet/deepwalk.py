@@ -7,7 +7,6 @@ from gensim.models import Word2Vec as _Word2Vec
 from numba import njit
 from sklearn import preprocessing
 
-
 class DeepWalk:
     r"""Implementation of `"DeepWalk" <https://arxiv.org/abs/1403.6652>`_
     from the KDD '14 paper "DeepWalk: Online Learning of Social Representations".
@@ -61,7 +60,6 @@ class DeepWalk:
             embedding = preprocessing.normalize(embedding)
         return embedding
 
-
 class RandomWalker:
     """Fast first-order random walks in DeepWalk
 
@@ -103,7 +101,6 @@ class RandomWalker:
 
                 yield walk
 
-
 class Word2Vec(_Word2Vec):
     """A compatible version of Word2Vec"""
 
@@ -121,7 +118,6 @@ class Word2Vec(_Word2Vec):
                              hs=hs,
                              compute_loss=True,
                              seed=seed, **kwargs)
-
         else:
             super().__init__(sentences,
                              vector_size=size,

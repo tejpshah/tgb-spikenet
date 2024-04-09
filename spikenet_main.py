@@ -12,7 +12,6 @@ from spikenet.layers import SAGEAggregator
 from spikenet.utils import (RandomWalkSampler, Sampler, add_selfloops,
                             set_seed, tab_printer)
 
-
 class SpikeNet(nn.Module):
     def __init__(self, in_features, out_features, hids=[32], alpha=1.0, p=0.5,
                  dropout=0.7, bias=True, aggr='mean', sampler='sage',
@@ -105,7 +104,6 @@ class SpikeNet(nn.Module):
     def forward(self, nodes):
         spikes = self.encode(nodes)
         return self.pooling(spikes)
-
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--dataset", nargs="?", default="DBLP",
@@ -225,5 +223,5 @@ for epoch in range(1, args.epochs + 1):
         f'Epoch: {epoch:03d}, Val: {val_metric[1]:.4f}, Test: {test_metric[1]:.4f}, Best: Macro-{best_test_metric[0]:.4f}, Micro-{best_test_metric[1]:.4f}, Time elapsed {end-start:.2f}s')
 
 # save bianry node embeddings (spikes)
-# emb = model.encode(torch.arange(data.num_nodes)).cpu()
-# torch.save(emb, 'emb.pth')
+emb = model.encode(torch.arange(data.num_nodes)).cpu()
+torch.save(emb, 'emb.pth')

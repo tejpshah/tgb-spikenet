@@ -12,7 +12,6 @@ parser.add_argument("--dataset", nargs="?", default="DBLP",
 parser.add_argument('--normalize', action='store_true',
                     help='Whether to normalize output embedding. (default: False)')
 
-
 args = parser.parse_args()
 if args.dataset.lower() == "dblp":
     data = dataset.DBLP()
@@ -23,7 +22,6 @@ elif args.dataset.lower() == "patent":
 else:
     raise ValueError(
         f"{args.dataset} is invalid. Only datasets (dblp, tmall, patent) are available.")
-
 
 model = DeepWalk(80, 10, 128, window_size=10, negative=1, workers=16)
 xs = []

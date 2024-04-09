@@ -91,7 +91,6 @@ class SpikeNet(nn.Module):
         spikes = self.encode(nodes)
         return self.pooling(spikes)
 
-
 parser = argparse.ArgumentParser()
 parser.add_argument("--dataset", nargs="?", default="flickr",
                     help="Datasets (Reddit and Flickr only). (default: Flickr)")
@@ -123,7 +122,6 @@ parser.add_argument('--concat', action='store_true',
                     help='Whether to concat node representation and neighborhood representations. (default: False)')
 parser.add_argument('--seed', type=int, default=2022,
                     help='Random seed for model. (default: 2022)')
-
 
 try:
     args = parser.parse_args()
