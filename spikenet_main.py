@@ -108,6 +108,7 @@ class SpikeNet(nn.Module):
 parser = argparse.ArgumentParser()
 parser.add_argument("--dataset", nargs="?", default="DBLP",
                     help="Datasets (DBLP, Tmall, Patent). (default: DBLP)")
+parser.add_argument('--tgbn_dataset', nargs="?", default="tgbn-trade")
 parser.add_argument('--sizes', type=int, nargs='+', default=[5, 2], help='Neighborhood sampling size for each layer. (default: [5, 2])')
 parser.add_argument('--hids', type=int, nargs='+',
                     default=[128, 10], help='Hidden units for each layer. (default: [128, 10])')
@@ -158,6 +159,8 @@ elif args.dataset.lower() == "tmall":
     data = dataset.Tmall()
 elif args.dataset.lower() == "patent":
     data = dataset.Patent()
+elif args.dataset.lower() == "tgbn":
+    data = dataset.TGBN(name=args.tgbn_dataset)
 else:
     raise ValueError(
         f"{args.dataset} is invalid. Only datasets (dblp, tmall, patent) are available.")

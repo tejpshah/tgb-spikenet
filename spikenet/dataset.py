@@ -11,7 +11,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder
 from tqdm import tqdm
 import tgb
-from tgb.nodeproppred.dataset import NodePropPredDataset
+from DataLoader import get_node_classification_tgb_data
 
 Data = namedtuple('Data', ['x', 'edge_index'])
 
@@ -140,13 +140,14 @@ class Dataset:
     def __repr__(self):
         return self.name
     
-class TGBN_GENRE(Dataset):
-    def __init__(self, root=tgb.nodeproppred.dataset.PROJ_DIR+'/data', normalize=True):
-        super().__init__(name='tgbn_genre', root=root)
+class TGBN(Dataset):
+    def __init__(self, root='./data', normalize=True, name='tgbn-trade'):
+        super().__init__(name=name, root=root)
+        node_raw_feats, _, self.dataset, _, _, _, _, _ = get_node_classification_tgb_data(dataset_name=name)
         edges_evolve, self.num_nodes = self._read_graph()
-        self.dataset = NodePropPredDataset(name='tgbn_genre', root="data", preprocess=True)
+        
         x = self._read_feature()
-        y = self._read_label()
+        y = self.dataset.labels.sum(axis=1).astype(int)
 
         if x is not None:
             if normalize:
@@ -169,10 +170,10 @@ class TGBN_GENRE(Dataset):
         self.y = torch.LongTensor(y)
 
     def _read_graph(self):
-        data = self.dataset.full_data
+        data = self.dataset
         d = defaultdict(list)
         N = 0
-        for x, y, t in zip(data['sources'], data['destinations'], data['timestamps']):
+        for x, y, t in zip(data.src_node_ids, data.dst_node_ids, data.node_interact_times):
             x, y = int(x), int(y)
             d[t].append((x, y))
             N = max(N, x)
@@ -184,22 +185,6 @@ class TGBN_GENRE(Dataset):
             edge_now = np.vstack([row, col])
             edges.append(edge_now)
         return edges, N
-
-    def _read_label(self):
-        filename = osp.join(self.root, self.name, "node2label.txt")
-        nodes = []
-        labels = []
-        with open(filename) as f:
-            for line in f:
-                node, label = line.strip().split()
-                nodes.append(int(node))
-                labels.append(label)
-
-        nodes = np.array(nodes)
-        labels = LabelEncoder().fit_transform(labels)
-
-        assert np.allclose(nodes, np.arange(nodes.size))
-        return labels
 
 class DBLP(Dataset):
     def __init__(self, root="./data", normalize=True):
