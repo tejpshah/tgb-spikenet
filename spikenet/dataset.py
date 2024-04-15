@@ -11,7 +11,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder
 from tqdm import tqdm
 import tgb
-from DataLoader import get_node_classification_tgb_data
+from tgb.nodeproppred.dataset_pyg import PyGNodePropPredDataset
 
 Data = namedtuple('Data', ['x', 'edge_index'])
 
@@ -65,15 +65,13 @@ class Dataset:
             torch.arange(y.size(0)),
             train_size=train_size + val_size,
             test_size=test_size,
-            random_state=random_state,
-            stratify=y)
+            random_state=random_state)
 
         if val_size:
             train_nodes, val_nodes = train_test_split(
                 train_nodes,
                 train_size=train_size / (train_size + val_size),
-                random_state=random_state,
-                stratify=y[train_nodes])
+                random_state=random_state)
         else:
             val_nodes = None
 
@@ -143,11 +141,11 @@ class Dataset:
 class TGBN(Dataset):
     def __init__(self, root='./data', normalize=True, name='tgbn-trade'):
         super().__init__(name=name, root=root)
-        node_raw_feats, _, self.dataset, _, _, _, _, _ = get_node_classification_tgb_data(dataset_name=name)
+        self.dataset = PyGNodePropPredDataset(name=name, root="datasets")
         edges_evolve, self.num_nodes = self._read_graph()
         
         x = self._read_feature()
-        y = self.dataset.labels.sum(axis=1).astype(int)
+        y = self._read_label()
 
         if x is not None:
             if normalize:
@@ -155,11 +153,12 @@ class TGBN(Dataset):
             self.num_features = x.shape[-1]
             self.x = torch.FloatTensor(x)
 
-        self.num_classes = y.max() + 1
+        self.num_classes = self.dataset.num_classes
 
         edges = [edges_evolve[0]]
         for e_now in edges_evolve[1:]:
             e_last = edges[-1]
+            # print(e_last.shape, e_now.shape)
             edges.append(np.hstack([e_last, e_now]))
 
         self.adj = [edges_to_adj(edge, num_nodes=self.num_nodes) for edge in edges]
@@ -167,14 +166,47 @@ class TGBN(Dataset):
         self.edges = [torch.LongTensor(edge) for edge in edges]
         self.edges_evolve = edges_evolve  # list of np.ndarray, the edges in each timestamp exist separately
 
-        self.y = torch.LongTensor(y)
+        self.y = torch.FloatTensor(y)
+
+    def _read_label(self):
+        data = self.dataset
+        curr = data.get_label_time()
+        num_classes = data.num_classes
+        combined_labels = []
+
+        while curr:
+            try:
+                label_tuple = data.get_node_label(curr)
+                label_ts, label_srcs, labels = (
+                    label_tuple[0],
+                    label_tuple[1],
+                    label_tuple[2],
+                )
+
+                # Sort labels based on label_srcs
+                sorted_indices = np.argsort(label_srcs)
+                labels = labels[sorted_indices]
+                label_srcs = label_srcs[sorted_indices]
+
+                if labels.shape[0] < num_classes:
+                    pad_width = num_classes - labels.shape[0]
+                    labels = np.pad(labels, pad_width=((0, pad_width), (0, 0)), mode='constant', constant_values=0)
+
+                combined_labels.append(labels)
+                
+                curr = data.get_label_time()
+            except:
+                break
+
+        # combined_labels = np.stack(combined_labels, axis=0)
+        return combined_labels[-1]
 
     def _read_graph(self):
         data = self.dataset
         d = defaultdict(list)
         N = 0
-        for x, y, t in zip(data.src_node_ids, data.dst_node_ids, data.node_interact_times):
-            x, y = int(x), int(y)
+        for x, y, t in zip(data.src, data.dst, data.ts):
+            x, y, t = int(x), int(y), int(t)
             d[t].append((x, y))
             N = max(N, x)
             N = max(N, y)
@@ -204,6 +236,7 @@ class DBLP(Dataset):
         edges = [edges_evolve[0]]
         for e_now in edges_evolve[1:]:
             e_last = edges[-1]
+            # print(e_last.shape, e_now.shape)
             edges.append(np.hstack([e_last, e_now]))
 
         self.adj = [edges_to_adj(edge, num_nodes=self.num_nodes) for edge in edges]

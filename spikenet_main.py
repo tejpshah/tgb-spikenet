@@ -132,7 +132,7 @@ parser.add_argument('--p', type=float, default=0.5,
                     help='Percentage of sampled neighborhoods for g_t. (default: 0.5)')
 parser.add_argument('--dropout', type=float, default=0.7,
                     help='Dropout probability. (default: 0.7)')
-parser.add_argument('--epochs', type=int, default=100,
+parser.add_argument('--epochs', type=int, default=1000,
                     help='Number of training epochs. (default: 100)')
 parser.add_argument('--concat', action='store_true',
                     help='Whether to concat node representation and neighborhood representations. (default: False)')
@@ -207,10 +207,12 @@ def test(loader):
         labels.append(y[nodes])
     logits = torch.cat(logits, dim=0).cpu()
     labels = torch.cat(labels, dim=0).cpu()
-    logits = logits.argmax(1)
-    metric_macro = metrics.f1_score(labels, logits, average='macro')
-    metric_micro = metrics.f1_score(labels, logits, average='micro')
-    return metric_macro, metric_micro
+    # logits = logits.argmax(1)
+    metric = metrics.mean_squared_error(labels, logits)
+    # metric_macro = metrics.f1_score(labels, logits, average='macro')
+    # metric_micro = metrics.f1_score(labels, logits, average='micro')
+    # return metric_macro, metric_micro
+    return metric
 
 
 best_val_metric = test_metric = 0
@@ -218,12 +220,12 @@ start = time.time()
 for epoch in range(1, args.epochs + 1):
     train()
     val_metric, test_metric = test(val_loader), test(test_loader)
-    if val_metric[1] > best_val_metric:
-        best_val_metric = val_metric[1]
-        best_test_metric = test_metric
+    # if val_metric[1] > best_val_metric:
+    #     best_val_metric = val_metric[1]
+    #     best_test_metric = test_metric
     end = time.time()
     print(
-        f'Epoch: {epoch:03d}, Val: {val_metric[1]:.4f}, Test: {test_metric[1]:.4f}, Best: Macro-{best_test_metric[0]:.4f}, Micro-{best_test_metric[1]:.4f}, Time elapsed {end-start:.2f}s')
+        f'Epoch: {epoch:03d}, Val: {val_metric:.4f}, Test: {test_metric:.4f}, Time elapsed {end-start:.2f}s')
 
 # save bianry node embeddings (spikes)
 emb = model.encode(torch.arange(data.num_nodes)).cpu()
