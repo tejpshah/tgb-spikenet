@@ -6,6 +6,7 @@ import torch.nn as nn
 from sklearn import metrics
 from torch.utils.data import DataLoader
 from tqdm import tqdm
+from tgb.nodeproppred.evaluate import Evaluator
 
 from spikenet import dataset, neuron
 from spikenet.layers import SAGEAggregator
@@ -165,6 +166,10 @@ else:
     raise ValueError(
         f"{args.dataset} is invalid. Only datasets (dblp, tmall, patent) are available.")
 
+# TODO Error handling
+evaluator = Evaluator(name=args.tgbn_dataset)
+eval_metric = data.eval_metric
+
 # train:val:test
 data.split_nodes(train_size=args.train_size, val_size=args.val_size,
                  test_size=args.test_size, random_state=args.split_seed)
@@ -208,11 +213,17 @@ def test(loader):
     logits = torch.cat(logits, dim=0).cpu()
     labels = torch.cat(labels, dim=0).cpu()
     # logits = logits.argmax(1)
-    metric = metrics.mean_squared_error(labels, logits)
+    input_dict = {
+        "y_true": labels,
+        "y_pred": logits,
+        "eval_metric": [eval_metric],
+    }
+    result_dict = evaluator.eval(input_dict)
+    score = result_dict[eval_metric]
     # metric_macro = metrics.f1_score(labels, logits, average='macro')
     # metric_micro = metrics.f1_score(labels, logits, average='micro')
     # return metric_macro, metric_micro
-    return metric
+    return score
 
 
 best_val_metric = test_metric = 0

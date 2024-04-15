@@ -165,6 +165,7 @@ class TGBN(Dataset):
         self.adj_evolve = [edges_to_adj(edge, num_nodes=self.num_nodes) for edge in edges_evolve]
         self.edges = [torch.LongTensor(edge) for edge in edges]
         self.edges_evolve = edges_evolve  # list of np.ndarray, the edges in each timestamp exist separately
+        self.eval_metric = self.dataset.eval_metric
 
         self.y = torch.FloatTensor(y)
 
