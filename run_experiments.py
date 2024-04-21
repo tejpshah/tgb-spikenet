@@ -247,29 +247,66 @@ if __name__ == '__main__':
     # Save the results
     os.makedirs('saved_results', exist_ok=True)
 
+    # Load existing results
+    try:
+        with open('saved_results/last_run.json', 'r') as f:
+            all_metrics_data = json.load(f)
+    except FileNotFoundError:
+        all_metrics_data = []
+    except json.JSONDecodeError:
+        print("Error reading the JSON file. Starting with an empty dataset.")
+        all_metrics_data = []
+
+    # Helper function to check if the current configuration has been run
+    def is_duplicate_experiment(current_config, all_metrics):
+        for data in all_metrics:
+            if (data['alpha'] == current_config['alpha'] and
+                data['batch_size'] == current_config['batch_size'] and
+                data['dropout'] == current_config['dropout'] and
+                data['hidden_units'] == current_config['hids'] and
+                data['p'] == current_config['p'] and
+                data['neuron'] == current_config['neuron'] and
+                data['concat_flag'] == current_config['concat']):
+                return True
+        return False
+
     # Generate and run experiments for each combination
-    all_metrics_data = []
     for alpha in alpha_range:
         for batch_size in batch_size_range:
             for dropout in dropout_range:
                 for hidden_units in hidden_units_range:
                     for p in p_range:
                         for concat_flag in [True, False]:
-                            args.concat = concat_flag
-                            args.alpha = alpha
-                            args.batch_size = batch_size
-                            args.dropout = dropout
-                            args.hids = hidden_units
-                            args.sizes = sizes
-                            args.p = p
-                            args.neuron = neuron_type
-                            args.epochs = 100
+                            # Set up the current configuration
+                            current_config = {
+                                'concat': concat_flag,
+                                'alpha': alpha,
+                                'batch_size': batch_size,
+                                'dropout': dropout,
+                                'hids': hidden_units,
+                                'sizes': sizes,
+                                'p': p,
+                                'neuron': neuron_type,
+                                'concat_flag': concat_flag
+                            }
+                            
+                            if not is_duplicate_experiment(current_config, all_metrics_data):
+                                args.concat = concat_flag
+                                args.alpha = alpha
+                                args.batch_size = batch_size
+                                args.dropout = dropout
+                                args.hids = hidden_units
+                                args.sizes = sizes
+                                args.p = p
+                                args.neuron = neuron_type
+                                args.epochs = 250
 
+                                print(f"Running experiment with hyperparameters: {alpha, batch_size, dropout, hidden_units, sizes, p, neuron_type, concat_flag}")
+                                metrics_data = run_experiment(args)
+                                all_metrics_data.append(metrics_data)
 
-                            print(f"Running experiment with hyperparameters: {alpha, batch_size, dropout, hidden_units, sizes, p, neuron_type, concat_flag}")
-                            metrics_data = run_experiment(args)
-                            all_metrics_data.append(metrics_data)
-
-                            current_datetime = datetime.now().strftime("%Y%m%d_%H%M%S")
-                            with open(f'saved_results/all_metrics_{current_datetime}.json', 'w') as f:
-                                json.dump(all_metrics_data, f, indent=4)
+                                current_datetime = datetime.now().strftime("%Y%m%d_%H%M%S")
+                                with open(f'saved_results/all_metrics_{current_datetime}.json', 'w') as f:
+                                    json.dump(all_metrics_data, f, indent=4)
+                            else:
+                                print(f"Skipping duplicate experiment for hyperparameters: {alpha, batch_size, dropout, hidden_units, sizes, p, neuron_type, concat_flag}")
