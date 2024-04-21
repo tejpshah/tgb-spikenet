@@ -196,7 +196,7 @@ def run_experiment(args):
 
     return metrics_data
 
-if __name__ == '__main__':
+def run_grid_search_tgbn_trade():
     # Argument setup
     parser = argparse.ArgumentParser()
     parser.add_argument("--dataset", nargs="?", default="tgbn",
@@ -311,3 +311,76 @@ if __name__ == '__main__':
                                     json.dump(all_metrics_data, f, indent=4)
                             else:
                                 print(f"Skipping duplicate experiment for hyperparameters: {alpha, batch_size, dropout, hidden_units, sizes, p, neuron_type, concat_flag}")
+
+def load_best_hyperparameters(file_path):
+    with open(file_path, 'r') as f:
+        all_metrics_data = json.load(f)
+
+    best_metric_data = max(all_metrics_data, key=lambda x: x['best_test_score'])
+    return best_metric_data
+
+if __name__ == '__main__':
+    # Argument setup
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--dataset", nargs="?", default="tgbn",
+                        help="Datasets (DBLP, Tmall, Patent). (default: TGBN)")
+    parser.add_argument("--tgbn_dataset", nargs="?", default="tgbn-trade",
+                        help="Specific dataset for TGBN (default: tgbn-trade)")
+    parser.add_argument("--lr", type=float, default=1e-4,
+                        help='Learning rate for training. (default: 1e-4)')
+    parser.add_argument('--seed', type=int, default=2022,
+                        help='Random seed for model. (default: 2022)')
+
+    args = parser.parse_args()
+
+    # Fixed splits for training, validation, and testing
+    args.train_size = 0.7
+    args.val_size = 0.15
+    args.test_size = 0.15
+    args.split_seed = 42  # Random seed for splitting nodes
+    args.sampler = 'sage'
+    args.aggr = 'mean'
+    args.surrogate = 'sigmoid'
+
+    # Dataset selection
+    if args.dataset.lower() == "dblp":
+        data = dataset.DBLP()
+    elif args.dataset.lower() == "tmall":
+        data = dataset.Tmall()
+    elif args.dataset.lower() == "patent":
+        data = dataset.Patent()
+    elif args.dataset.lower() == "tgbn":
+        data = dataset.TGBN(name=args.tgbn_dataset)
+    else:
+        raise ValueError(f"{args.dataset} is invalid. Only datasets (DBLP, Tmall, Patent, TGBN) are available.")
+
+    evaluator = Evaluator(name=args.tgbn_dataset)
+    eval_metric = data.eval_metric
+
+    data.split_nodes(train_size=args.train_size, val_size=args.val_size, test_size=args.test_size, random_state=args.split_seed)
+
+    # Load the best hyperparameters from the JSON file
+    best_hyperparameters = load_best_hyperparameters('saved_results/spikenet_tgbntrade_gridsearch.json')
+
+    # Set up the configuration with the best hyperparameters
+    args.concat = best_hyperparameters['concat_flag']
+    args.alpha = best_hyperparameters['alpha']
+    args.batch_size = best_hyperparameters['batch_size']
+    args.dropout = best_hyperparameters['dropout']
+    args.hids = best_hyperparameters['hidden_units']
+    args.sizes = best_hyperparameters['sampling_sizes']
+    args.p = best_hyperparameters['p']
+    args.neuron = best_hyperparameters['neuron']
+    args.epochs = 100
+
+    # Run 5 experiments with the best hyperparameters
+    all_metrics_data = []
+    for i in range(5):
+        print(f"Running experiment {i+1} with the best hyperparameters")
+        metrics_data = run_experiment(args)
+        all_metrics_data.append(metrics_data)
+
+    # Save the results to a JSON file
+    current_datetime = datetime.now().strftime("%Y%m%d_%H%M%S")
+    with open(f'saved_results/best_hyperparameters_metrics_{current_datetime}.json', 'w') as f:
+        json.dump(all_metrics_data, f, indent=4)
