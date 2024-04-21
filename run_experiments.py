@@ -190,7 +190,8 @@ def run_experiment(args):
         'dropout': args.dropout,
         'p': args.p,
         'batch_size': args.batch_size,
-        'total_time_elapsed': time.time() - start
+        'total_time_elapsed': time.time() - start,
+        'concat_flag': args.concat
     }
 
     return metrics_data
@@ -299,7 +300,7 @@ if __name__ == '__main__':
                                 args.sizes = sizes
                                 args.p = p
                                 args.neuron = neuron_type
-                                args.epochs = 250
+                                args.epochs = 100
 
                                 print(f"Running experiment with hyperparameters: {alpha, batch_size, dropout, hidden_units, sizes, p, neuron_type, concat_flag}")
                                 metrics_data = run_experiment(args)
