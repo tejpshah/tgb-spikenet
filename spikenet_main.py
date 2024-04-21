@@ -1,12 +1,14 @@
 import argparse
 import time
-
+import os 
 import torch
 import torch.nn as nn
 from sklearn import metrics
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 from tgb.nodeproppred.evaluate import Evaluator
+import json 
+from datetime import datetime 
 
 from spikenet import dataset, neuron
 from spikenet.layers import SAGEAggregator
@@ -110,9 +112,9 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--dataset", nargs="?", default="DBLP",
                     help="Datasets (DBLP, Tmall, Patent). (default: DBLP)")
 parser.add_argument('--tgbn_dataset', nargs="?", default="tgbn-trade")
-parser.add_argument('--sizes', type=int, nargs='+', default=[5, 2], help='Neighborhood sampling size for each layer. (default: [5, 2])')
+parser.add_argument('--sizes', type=int, nargs='+', default=[5,2,2], help='Neighborhood sampling size for each layer. (default: [5, 2])')
 parser.add_argument('--hids', type=int, nargs='+',
-                    default=[128, 10], help='Hidden units for each layer. (default: [128, 10])')
+                    default=[128, 128, 128], help='Hidden units for each layer. (default: [128, 10])')
 parser.add_argument("--aggr", nargs="?", default="mean",
                     help="Aggregate function ('mean', 'sum'). (default: 'mean')")
 parser.add_argument("--sampler", nargs="?", default="sage",
@@ -133,7 +135,7 @@ parser.add_argument('--p', type=float, default=0.5,
                     help='Percentage of sampled neighborhoods for g_t. (default: 0.5)')
 parser.add_argument('--dropout', type=float, default=0.7,
                     help='Dropout probability. (default: 0.7)')
-parser.add_argument('--epochs', type=int, default=1000,
+parser.add_argument('--epochs', type=int, default=250,
                     help='Number of training epochs. (default: 100)')
 parser.add_argument('--concat', action='store_true',
                     help='Whether to concat node representation and neighborhood representations. (default: False)')
@@ -162,6 +164,7 @@ elif args.dataset.lower() == "patent":
     data = dataset.Patent()
 elif args.dataset.lower() == "tgbn":
     data = dataset.TGBN(name=args.tgbn_dataset)
+    
 else:
     raise ValueError(
         f"{args.dataset} is invalid. Only datasets (dblp, tmall, patent) are available.")
@@ -185,6 +188,8 @@ val_loader = DataLoader(data.test_nodes.tolist() if data.val_nodes is None else 
                         pin_memory=False, batch_size=200000, shuffle=False)
 test_loader = DataLoader(data.test_nodes.tolist(), pin_memory=False, batch_size=200000, shuffle=False)
 
+
+
 model = SpikeNet(data.num_features, data.num_classes, alpha=args.alpha,
                  dropout=args.dropout, sampler=args.sampler, p=args.p,
                  aggr=args.aggr, concat=args.concat, sizes=args.sizes, surrogate=args.surrogate,
@@ -198,9 +203,10 @@ def train():
     model.train()
     for nodes in tqdm(train_loader, desc='Training'):
         optimizer.zero_grad()
-        loss_fn(model(nodes), y[nodes]).backward()
+        loss = loss_fn(model(nodes), y[nodes])
+        loss.backward()
         optimizer.step()
-
+    return loss.item()
 
 @torch.no_grad()
 def test(loader):
@@ -212,7 +218,6 @@ def test(loader):
         labels.append(y[nodes])
     logits = torch.cat(logits, dim=0).cpu()
     labels = torch.cat(labels, dim=0).cpu()
-    # logits = logits.argmax(1)
     input_dict = {
         "y_true": labels,
         "y_pred": logits,
@@ -220,24 +225,46 @@ def test(loader):
     }
     result_dict = evaluator.eval(input_dict)
     score = result_dict[eval_metric]
-    # metric_macro = metrics.f1_score(labels, logits, average='macro')
-    # metric_micro = metrics.f1_score(labels, logits, average='micro')
-    # return metric_macro, metric_micro
     return score
 
-
 best_val_metric = test_metric = 0
+best_train_loss = float('inf')
 start = time.time()
-for epoch in range(1, args.epochs + 1):
-    train()
-    val_metric, test_metric = test(val_loader), test(test_loader)
-    # if val_metric[1] > best_val_metric:
-    #     best_val_metric = val_metric[1]
-    #     best_test_metric = test_metric
-    end = time.time()
-    print(
-        f'Epoch: {epoch:03d}, Val: {val_metric:.4f}, Test: {test_metric:.4f}, Time elapsed {end-start:.2f}s')
 
-# save bianry node embeddings (spikes)
-emb = model.encode(torch.arange(data.num_nodes)).cpu()
-torch.save(emb, 'emb.pth')
+for epoch in range(1, args.epochs + 1):
+    train_loss = train()
+    val_metric = test(val_loader)
+    test_metric = test(test_loader)
+    
+    if val_metric > best_val_metric:
+        best_val_metric = val_metric
+        best_test_metric = test_metric
+        best_train_loss = train_loss
+        
+    print(f'Epoch: {epoch:03d}, Train Loss: {train_loss:.4f}, Val: {val_metric:.4f}, Test: {test_metric:.4f}')
+
+# Create saved_results folder if it doesn't exist
+os.makedirs('saved_results', exist_ok=True)
+
+# Get current datetime
+current_datetime = datetime.now().strftime("%Y%m%d_%H%M%S")
+
+# Save the best metrics and key properties in a JSON file
+metrics_data = {
+    'dataset': args.dataset,
+    'best_epoch': epoch,
+    'best_train_loss': best_train_loss,
+    'best_validation_score': best_val_metric,
+    'best_test_score': best_test_metric,
+    'hidden_units': args.hids,
+    'aggregation': args.aggr,
+    'sampling_sizes': args.sizes,
+    'surrogate': args.surrogate,
+    'neuron': args.neuron,
+    'alpha': args.alpha,
+    'dropout': args.dropout,
+    'total_time_elapsed': time.time() - start
+}
+
+with open(f'saved_results/best_metrics_{current_datetime}.json', 'w') as f:
+    json.dump(metrics_data, f, indent=4)
