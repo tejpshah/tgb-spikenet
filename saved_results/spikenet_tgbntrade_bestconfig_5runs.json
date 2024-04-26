@@ -1,0 +1,122 @@
+[
+    {
+        "dataset": "tgbn",
+        "best_epoch": 100,
+        "best_train_loss": 3.5095083713531494,
+        "best_validation_score": 0.3750267359149725,
+        "best_test_score": 0.3362478465133463,
+        "hidden_units": [
+            128,
+            128
+        ],
+        "aggregation": "mean",
+        "sampling_sizes": [
+            5,
+            2
+        ],
+        "surrogate": "sigmoid",
+        "neuron": "LIF",
+        "alpha": 1.0,
+        "dropout": 0.2,
+        "p": 0.6,
+        "batch_size": 512,
+        "total_time_elapsed": 1897.8748190402985,
+        "concat_flag": true
+    },
+    {
+        "dataset": "tgbn",
+        "best_epoch": 100,
+        "best_train_loss": 3.331573963165283,
+        "best_validation_score": 0.3792793943042404,
+        "best_test_score": 0.32788849366817757,
+        "hidden_units": [
+            128,
+            128
+        ],
+        "aggregation": "mean",
+        "sampling_sizes": [
+            5,
+            2
+        ],
+        "surrogate": "sigmoid",
+        "neuron": "LIF",
+        "alpha": 1.0,
+        "dropout": 0.2,
+        "p": 0.6,
+        "batch_size": 512,
+        "total_time_elapsed": 1066.9671342372894,
+        "concat_flag": true
+    },
+    {
+        "dataset": "tgbn",
+        "best_epoch": 100,
+        "best_train_loss": 3.443140745162964,
+        "best_validation_score": 0.3788554504229429,
+        "best_test_score": 0.3322679051400513,
+        "hidden_units": [
+            128,
+            128
+        ],
+        "aggregation": "mean",
+        "sampling_sizes": [
+            5,
+            2
+        ],
+        "surrogate": "sigmoid",
+        "neuron": "LIF",
+        "alpha": 1.0,
+        "dropout": 0.2,
+        "p": 0.6,
+        "batch_size": 512,
+        "total_time_elapsed": 2458.4939243793488,
+        "concat_flag": true
+    },
+    {
+        "dataset": "tgbn",
+        "best_epoch": 100,
+        "best_train_loss": 3.309182643890381,
+        "best_validation_score": 0.38392528074939436,
+        "best_test_score": 0.34557140906405337,
+        "hidden_units": [
+            128,
+            128
+        ],
+        "aggregation": "mean",
+        "sampling_sizes": [
+            5,
+            2
+        ],
+        "surrogate": "sigmoid",
+        "neuron": "LIF",
+        "alpha": 1.0,
+        "dropout": 0.2,
+        "p": 0.6,
+        "batch_size": 512,
+        "total_time_elapsed": 1977.5431780815125,
+        "concat_flag": true
+    },
+    {
+        "dataset": "tgbn",
+        "best_epoch": 100,
+        "best_train_loss": 3.1678500175476074,
+        "best_validation_score": 0.3815800484379518,
+        "best_test_score": 0.32945713958475425,
+        "hidden_units": [
+            128,
+            128
+        ],
+        "aggregation": "mean",
+        "sampling_sizes": [
+            5,
+            2
+        ],
+        "surrogate": "sigmoid",
+        "neuron": "LIF",
+        "alpha": 1.0,
+        "dropout": 0.2,
+        "p": 0.6,
+        "batch_size": 512,
+        "total_time_elapsed": 404.9853012561798,
+        "concat_flag": true
+    }
+]

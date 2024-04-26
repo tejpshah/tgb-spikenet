@@ -46,8 +46,9 @@ class Dataset:
     def _read_feature(self):
         filename = osp.join(self.root, self.name, f"{self.name}.npy")
         if osp.exists(filename):
-            return np.load(filename)
+            return np.load(filename, allow_pickle=True)
         else:
+            print(f"Feature file {filename} not found")
             return None
 
     def split_nodes(
@@ -145,7 +146,9 @@ class TGBN(Dataset):
         edges_evolve, self.num_nodes = self._read_graph()
         
         x = self._read_feature()
+        print(f"Feature shape: {x.shape}")
         y = self._read_label()
+        print(f"Label shape: {y.shape}")
 
         if x is not None:
             if normalize:
