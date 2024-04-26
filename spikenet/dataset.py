@@ -156,7 +156,7 @@ class TGBN(Dataset):
         self.num_classes = self.dataset.num_classes
 
         edges = [edges_evolve[0]]
-        for e_now in edges_evolve[1:]:
+        for e_now in tqdm(edges_evolve[1:], desc='Merging edges'):
             e_last = edges[-1]
             # print(e_last.shape, e_now.shape)
             edges.append(np.hstack([e_last, e_now]))
@@ -206,17 +206,23 @@ class TGBN(Dataset):
         data = self.dataset
         d = defaultdict(list)
         N = 0
-        for x, y, t in zip(data.src, data.dst, data.ts):
-            x, y, t = int(x), int(y), int(t)
+        edges = len(data.src)
+        for i in tqdm(range(edges), desc='loading edges'):
+            x, y, t = int(data.src[i]), int(data.dst[i]), int(data.ts[i])
             d[t].append((x, y))
             N = max(N, x)
             N = max(N, y)
         N += 1
         edges = []
-        for time in sorted(d):
+        max_time_idx = int(len(d.keys()) * 0.01)
+        max_time = sorted(d.keys())[int(max_time_idx)]
+        for time in tqdm(sorted(d), desc='Sorting edges'):
             row, col = zip(*d[time])
             edge_now = np.vstack([row, col])
             edges.append(edge_now)
+
+            if int(time) > max_time:
+                break
         return edges, N
 
 class DBLP(Dataset):
@@ -260,10 +266,14 @@ class DBLP(Dataset):
                 N = max(N, y)
         N += 1
         edges = []
+        # max_time = max(map(int, d.keys())) * 0.2
         for time in sorted(d):
             row, col = zip(*d[time])
             edge_now = np.vstack([row, col])
             edges.append(edge_now)
+
+            # if int(time) > max_time:
+            #     break
         return edges, N
 
     def _read_label(self):

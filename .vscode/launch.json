@@ -5,12 +5,33 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "Python Debugger: Current File",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal"
+        },
+        {
             "name": "Python Run Main",
             "type": "python",
             "request": "launch",
             "program": "./spikenet_main.py",
             "console": "integratedTerminal",
-            "args": ["--dataset", "dblp", "--tgbn_dataset", "tgbn-trade", "--hids", "128", "10", "--batch_size", "1024", "--p", "0.5", "--train_size", "0.4"]
+            "args": [
+                "--dataset",
+                "tgbn",
+                "--tgbn_dataset",
+                "tgbn-genre",
+                "--hids",
+                "128",
+                "10",
+                "--batch_size",
+                "1024",
+                "--p",
+                "0.5",
+                "--train_size",
+                "0.4"
+            ]
         },
         {
             "name": "Deep Walk",
@@ -18,7 +39,12 @@
             "request": "launch",
             "program": "./spikenet_generate_feature.py",
             "console": "integratedTerminal",
-            "args": ["--dataset", "tgbn"]
+            "args": [
+                "--dataset",
+                "tgbn",
+                "--tgbn_dataset",
+                "tgbn-genre"
+            ]
         }
     ]
 }

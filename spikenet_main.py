@@ -198,7 +198,8 @@ def train():
     model.train()
     for nodes in tqdm(train_loader, desc='Training'):
         optimizer.zero_grad()
-        loss_fn(model(nodes), y[nodes]).backward()
+        probabilities = torch.nn.functional.softmax(model(nodes), dim=0)
+        loss_fn(probabilities, y[nodes]).backward()
         optimizer.step()
 
 
@@ -212,10 +213,12 @@ def test(loader):
         labels.append(y[nodes])
     logits = torch.cat(logits, dim=0).cpu()
     labels = torch.cat(labels, dim=0).cpu()
-    # logits = logits.argmax(1)
+
+    probabilities = torch.nn.functional.softmax(logits, dim=0)
+    # print(labels)
     input_dict = {
         "y_true": labels,
-        "y_pred": logits,
+        "y_pred": probabilities,
         "eval_metric": [eval_metric],
     }
     result_dict = evaluator.eval(input_dict)
